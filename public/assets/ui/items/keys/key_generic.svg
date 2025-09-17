@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" shape-rendering="crispEdges">
+  <defs>
+    <style>
+      .p0{fill:#000000}  /* outline */
+      .p1{fill:#f7d879}  /* gold light */
+      .p2{fill:#d3a94b}  /* gold mid */
+      .p3{fill:#a77f33}  /* gold dark */
+    </style>
+  </defs>
+  <!-- ring -->
+  <rect x="3" y="7" width="10" height="10" class="p0"/>
+  <rect x="4" y="8" width="8"  height="8"  class="p2"/>
+  <rect x="6" y="10" width="4" height="4" class="p1"/>
+
+  <!-- neck -->
+  <rect x="12" y="11" width="7" height="6" class="p0"/>
+  <rect x="13" y="12" width="5" height="4" class="p2"/>
+  <rect x="14" y="13" width="3" height="2" class="p1"/>
+
+  <!-- blade -->
+  <rect x="18" y="12" width="11" height="4" class="p0"/>
+  <rect x="19" y="13" width="9"  height="2" class="p2"/>
+
+  <!-- teeth -->
+  <rect x="24" y="16" width="3" height="3" class="p0"/>
+  <rect x="25" y="17" width="1" height="1" class="p3"/>
+  <rect x="27" y="14" width="3" height="3" class="p0"/>
+  <rect x="28" y="15" width="1" height="1" class="p3"/>
+</svg>
