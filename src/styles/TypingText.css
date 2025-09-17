@@ -1,0 +1,26 @@
+.typing-text {
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s ease;
+  position: relative;
+  display: inline-block;
+}
+
+/* Cursor kedip */
+.typing-text::after {
+  content: "|";
+  position: absolute;
+  right: -10px;
+  animation: blink 1s step-start infinite;
+}
+
+/* Kalau teks udah selesai (done) → cursor ilang */
+.typing-text.done::after {
+  content: "";
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "intro": [
+    {
+      "image": "/assets/intro-scene/intro1.png",
+      "text": "Seorang pria muda mengendarai mobil tuanya, menyusuri jalan berdebu yang berliku menuju sebuah tempat yang dulu ia sebut rumah."
+    },
+    {
+      "image": "/assets/intro-scene/intro2.png",
+      "text": "Di kejauhan, siluet sebuah gapura desa mulai terlihat."
+    },
+    {
+      "image": "/assets/intro-scene/intro3.png",
+      "text": "Saat gapura kampung mulai terlihat, langkah waktu seakan berhenti. Suara tawa masa kecil terngiang di kepalanya."
+    },
+    {
+      "image": "/assets/intro-scene/intro4.png",
+      "text": ".",
+      "audio": "/assets/sounds/kidslaugh.m4a",
+      "fit": "contain"
+    },
+    {
+      "image": "/assets/intro-scene/intro5.png",
+      "text": "''Fyuhh Home Sweet Home''. Dia menghela napas lega, merasakan beban di pundaknya sedikit berkurang."
+    },
+    {
+      "image": "/assets/intro-scene/intro6.png",
+      "text": "Ia kembali menginjak gas, melaju pelan melewati jalan-jalan sempit kampung. Tak sadar, di pinggir jalan beberapa warga sibuk menebang pohon. Tapi pikirannya terlalu penuh, matanya hanya tertuju pada tujuan rumahnya."
+    }
+  ]
+}

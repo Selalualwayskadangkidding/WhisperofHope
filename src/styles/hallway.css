@@ -1,0 +1,38 @@
+.hw-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+}
+
+/* tambahin width/height fix di stage */
+.hw-stage {
+  position: relative;
+  width: 1280px;   /* FIX: kasih ukuran biar bisa dicenter & dipakai overlay */
+  height: 720px;   /* FIX */
+  transform-origin: center center;
+}
+
+.hw-map {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1280px;
+  height: 720px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.hw-player {
+  position: absolute;
+  left: 0; top: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}

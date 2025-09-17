@@ -1,0 +1,36 @@
+/* src/scenes/livingroom.css */
+.lr-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+}
+
+.lr-stage {
+  position: relative;
+  transform-origin: center center; /* zoom tetap di tengah */
+}
+
+.lr-map {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1280px;
+  height: 720px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.lr-player {
+  position: absolute;
+  left: 0; top: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
