@@ -1,32 +1,64 @@
 // src/state/itemsDb.js
-const BASE = import.meta.env.BASE_URL || "/";
+const BASE = (import.meta?.env?.BASE_URL ?? "/").replace(/\/+$/, "") + "/";
 
-/** Label cantik buat ditampilkan di UI */
+/** Katalog ID item baku (hindari magic string di tempat lain) */
+export const ITEM_IDS = {
+  HOUSE_KEYRING: "house_keyring",
+  HOUSE_KEY: "house_key", // legacy single key (back-compat)
+};
+
+/** Util: cek & bikin/pecah ID kunci multi pintu */
+export function isKeyId(id) {
+  return typeof id === "string" && id.startsWith("key:");
+}
+/**
+ * keyId format: key:<houseTag>:<lockId>
+ * contoh: key:house1:frontdoor
+ */
+export function makeKeyId(houseTag, lockId) {
+  return `key:${houseTag}:${lockId}`;
+}
+export function parseKeyId(id) {
+  if (!isKeyId(id)) return null;
+  const [, houseTag, lockId] = id.split(":");
+  return { houseTag, lockId };
+}
+
+/** Label cantik buat UI */
 export function itemLabel(id) {
-  if (id?.startsWith("key:")) {
-    const [, house, lock] = id.split(":");
-    return `Kunci (${house} / ${lock})`;
+  if (!id) return "—";
+
+  if (isKeyId(id)) {
+    const parsed = parseKeyId(id);
+    if (!parsed) return "Kunci";
+    const { houseTag, lockId } = parsed;
+    return `Kunci (${houseTag} / ${lockId})`;
   }
+
   switch (id) {
-    case "house_keyring":
+    case ITEM_IDS.HOUSE_KEYRING:
       return "Gantungan Kunci";
-    case "house_key":
+    case ITEM_IDS.HOUSE_KEY: // legacy
       return "Kunci Rumah";
     default:
-      return id || "—";
+      // fallback: tampilkan id mentah biar kelihatan kalau ada item baru
+      return id;
   }
 }
 
-/** Path icon item (silakan arahkan ke gambar final kamu) */
+/** Path icon item (arahin ke aset kamu) */
 export function itemIcon(id) {
-  // ikon khusus kalau masih pakai single id "house_key"
-  if (id === "house_key") return `${BASE}assets/ui/items/keys/house_key.png`;
+  if (!id) return null;
 
-  // semua kunci multi-id pakai gambar yang sama (bisa dipecah per lock kalau mau)
-  if (id?.startsWith("key:")) return `${BASE}assets/ui/items/keys/house_key.png`;
+  // Legacy single key → ikon sama
+  if (id === ITEM_IDS.HOUSE_KEY) return `${BASE}assets/ui/items/keys/house_key.png`;
 
-  // gantungan kunci
-  if (id === "house_keyring") return `${BASE}assets/ui/items/keys/keyring.svg`;
+  // Semua kunci multi pintu sementara pakai ikon yang sama
+  if (isKeyId(id)) return `${BASE}assets/ui/items/keys/house_key.png`;
 
+  // Gantungan kunci (SVG)
+  if (id === ITEM_IDS.HOUSE_KEYRING) return `${BASE}assets/ui/items/keys/keyring.svg`;
+
+  // fallback: tidak ada ikon
   return null;
 }

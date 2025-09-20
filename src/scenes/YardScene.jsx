@@ -12,7 +12,6 @@ import useDoorEnter from "../mechanics/useDoorEnter.js";
 import DoorHint from "../components/DoorHint.jsx";
 
 import InventoryPanel from "../components/InventoryPanel.jsx";
-import KeyPickerModal from "../components/KeyPickerModal.jsx";
 import { itemLabel } from "../state/itemsDb.js";
 
 import {
@@ -43,6 +42,7 @@ const HOUSE_RECT_ID_FOR_DOOR = 7;
 /** Tag rumah & ID pintu depan untuk lock per pintu */
 const HOUSE_TAG = "house1";
 const FRONT_LOCK_ID = "frontdoor";
+const REQ_KEY_ID = `key:${HOUSE_TAG}:${FRONT_LOCK_ID}`;
 
 export default function YardScene({ onEnterHouse }) {
   const worldRef = useRef(null);
@@ -86,7 +86,6 @@ export default function YardScene({ onEnterHouse }) {
   const [locked, setLockedState] = useState(() =>
     isLocked(HOUSE_TAG, FRONT_LOCK_ID)
   );
-  const [showKeyPicker, setShowKeyPicker] = useState(false);
 
   /** Seed inventori (sekali jalan) + pastikan lock ada */
   useEffect(() => {
@@ -102,9 +101,8 @@ export default function YardScene({ onEnterHouse }) {
       next = addItem(next, ITEMS.HOUSE_KEYRING);
       changed = true;
     }
-    const keyFront = `key:${HOUSE_TAG}:${FRONT_LOCK_ID}`;
-    if (!hasItem(next, keyFront)) {
-      next = addItem(next, keyFront);
+    if (!hasItem(next, REQ_KEY_ID)) {
+      next = addItem(next, REQ_KEY_ID);
       changed = true;
     }
     if (changed) {
@@ -133,10 +131,14 @@ export default function YardScene({ onEnterHouse }) {
   /** Keyboard: WASD + I + E (gunakan kunci HANYA saat dekat pintu & terkunci) */
   useEffect(() => {
     const onKeyDown = (e) => {
-      // Toggle Inventory
+      // Toggle Inventory manual
       if (e.key === "i" || e.key === "I") {
         e.preventDefault();
-        setShowInventory((v) => !v);
+        setShowInventory((v) => {
+          // kalau lagi ada handler paksa klik kunci, hapus saat ditutup manual
+          if (v && window.__yard_onInvClick) delete window.__yard_onInvClick;
+          return !v;
+        });
         return;
       }
 
@@ -144,10 +146,7 @@ export default function YardScene({ onEnterHouse }) {
       if (nearDoor && locked && (e.key === "e" || e.key === "E")) {
         e.preventDefault();
 
-        // Kandidat kunci untuk rumah ini
-        const candidates = listKeysForHouse(inventory, HOUSE_TAG);
-
-        // Back-compat: jika masih pakai single ITEMS.HOUSE_KEY → anggap valid
+        // Back-compat: masih support HOUSE_KEY tunggal
         if (hasItem(inventory, ITEMS.HOUSE_KEY)) {
           setLocked(HOUSE_TAG, FRONT_LOCK_ID, false);
           setLockedState(false);
@@ -155,23 +154,36 @@ export default function YardScene({ onEnterHouse }) {
           return;
         }
 
+        const candidates = listKeysForHouse(inventory, HOUSE_TAG);
         if (candidates.length === 0) {
           console.log("Pintu terkunci. Tidak ada kunci untuk rumah ini.");
           return;
         }
-        if (candidates.length === 1) {
-          const only = candidates[0];
-          if (hasMatchingKey(inventory, HOUSE_TAG, FRONT_LOCK_ID)) {
+
+        // Paksa buka InventoryPanel, minta klik kunci yang benar
+        setShowInventory(true);
+
+        // Simpan handler klik sementara (biar patch minimal)
+        window.__yard_onInvClick = (clickedId) => {
+          if (!clickedId) return;
+
+          const ok =
+            clickedId === REQ_KEY_ID ||
+            hasMatchingKey([clickedId], HOUSE_TAG, FRONT_LOCK_ID);
+
+          if (ok) {
             setLocked(HOUSE_TAG, FRONT_LOCK_ID, false);
             setLockedState(false);
-            console.log(`Membuka pintu dengan ${itemLabel(only)}.`);
-            // setInventory(removeItem(inventory, only)); // kalau sekali pakai
+            console.log(`Membuka pintu dengan ${itemLabel(clickedId)}.`);
+            // Optional: sekali pakai
+            // setInventory(removeItem(inventory, clickedId));
+            setShowInventory(false);
+            delete window.__yard_onInvClick;
           } else {
-            console.log("Kunci itu tidak cocok untuk pintu ini.");
+            console.log("Kunci tidak cocok. Pilih kunci lain.");
+            // biarkan inventory tetap terbuka
           }
-          return;
-        }
-        setShowKeyPicker(true);
+        };
         return;
       }
 
@@ -365,28 +377,21 @@ export default function YardScene({ onEnterHouse }) {
         }}
       />
 
-      {/* Modal pilih kunci (jika kandidat > 1) */}
-      {showKeyPicker && (
-        <KeyPickerModal
-          keys={listKeysForHouse(inventory, HOUSE_TAG)}
-          onCancel={() => setShowKeyPicker(false)}
-          onPick={(id) => {
-            if (id === `key:${HOUSE_TAG}:${FRONT_LOCK_ID}`) {
-              setLocked(HOUSE_TAG, FRONT_LOCK_ID, false);
-              setLockedState(false);
-              console.log(`Membuka pintu dengan ${itemLabel(id)}.`);
-              // setInventory(removeItem(inventory, id)); // kalau sekali pakai
-            } else {
-              console.log("Kunci tidak cocok.");
-            }
-            setShowKeyPicker(false);
-          }}
-        />
-      )}
-
       {/* Inventory */}
       {showInventory && (
-        <InventoryPanel items={inventory} onClose={() => setShowInventory(false)} />
+        <InventoryPanel
+          items={inventory}
+          onClose={() => {
+            setShowInventory(false);
+            if (window.__yard_onInvClick) delete window.__yard_onInvClick;
+          }}
+          disableBackdropClose={true}      // paksa pemain tetap di panel saat memilih kunci
+          hideCloseButton={false}          // set true kalau mau lebih strict
+          onItemClick={(id) => {
+            if (window.__yard_onInvClick) window.__yard_onInvClick(id);
+          }}
+          initialSelectedId={REQ_KEY_ID}   // fokus ke kunci pintu depan
+        />
       )}
 
       {/* Editor overlay (tahan SHIFT) */}

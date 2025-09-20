@@ -1,0 +1,70 @@
+/* ====== THEME: warna senada tombol ====== */
+:root {
+  --btn-fill:        #e8b55a;   /* tan */
+  --btn-fill-hi:     #f6d58a;   /* highlight */
+  --btn-stroke:      #6b4122;   /* outline cokelat */
+  --btn-stroke-dark: #3a2410;   /* shadow/garis gelap */
+  --panel-bg:        rgba(34,22,12,0.88); /* cokelat gelap transparan */
+  --panel-line:      rgba(255,225,180,0.25);
+  --scroll-thumb:    #c88932;   /* cokelat-oranye (thumb) */
+  --scroll-thumb-hi: #dfa24c;
+  --text-main:       #fff8e5;   /* putih krem */
+}
+
+/* Panel HUD (header + body) agar nyatu dengan tombol */
+.cleanliness-panel {
+  background: var(--panel-bg);
+  border: 2px solid var(--btn-stroke-dark);
+  box-shadow:
+    inset 0 0 0 2px var(--btn-stroke),
+    0 2px 0 #0008;
+  border-radius: 8px;
+}
+
+/* Header badge kecil (opsional kalau kamu mau wrap header di div sendiri) */
+.cleanliness-header {
+  background: linear-gradient(var(--btn-fill-hi), var(--btn-fill));
+  border: 2px solid var(--btn-stroke-dark);
+  box-shadow: inset 0 0 0 2px var(--btn-stroke);
+  border-radius: 8px;
+}
+
+/* ===== Scrollbar Custom untuk checklist (pixel vibes) ===== */
+.cleanliness-checklist {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 10px; /* ruang untuk scrollbar */
+  scrollbar-width: thin;                      /* Firefox */
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* Chrome, Edge, Safari */
+.cleanliness-checklist::-webkit-scrollbar {
+  width: 12px;
+}
+
+.cleanliness-checklist::-webkit-scrollbar-track {
+  background: linear-gradient(var(--btn-fill-hi), var(--btn-fill));
+  border: 2px solid var(--btn-stroke-dark);
+  box-shadow: inset 0 0 0 2px var(--btn-stroke);
+  border-radius: 4px;
+}
+
+.cleanliness-checklist::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  box-shadow: inset 0 0 0 2px var(--btn-stroke-dark), inset 0 0 0 4px var(--btn-stroke);
+  border-radius: 2px;            /* kotak tegas */
+}
+
+.cleanliness-checklist::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hi);
+}
+
+/* Item list border dotted yang lebih halus */
+.cleanliness-item {
+  border: 1px dashed var(--panel-line);
+  color: var(--text-main);
+}
+.cleanliness-item--done {
+  background: rgba(70, 120, 40, 0.28);
+}

@@ -6,7 +6,7 @@ import IntroScene from "./scenes/IntroScene";
 import YardScene from "./scenes/YardScene";
 import LivingRoomScene from "./scenes/LivingRoomScene";
 import HallwayScene from "./scenes/HallwayScene";
-
+import locks from "./mechanics/locks";
 // ========== Tambahan: import tujuan pintu hallway ==========
 import RoomKakakScene from "./scenes/RoomKakakScene";
 import RoomOrtuScene from "./scenes/RoomOrtuScene";
@@ -22,7 +22,13 @@ export default function App() {
     localStorage.setItem("hv_next_spawn_id", String(doorId));
     setScene("hallway");
   }
-
+  locks.initLocks({
+  doors: {
+    // contoh: door id "frontdoor" membutuhkan key "key_front"
+    frontdoor: { locked: true, requiredKeyId: "key_front" },
+    yard_to_lr: { locked: true, requiredKeyId: "key_house" },
+  },
+});
   return (
     <>
       {scene === "menu" && (

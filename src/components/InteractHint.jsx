@@ -1,25 +1,32 @@
-export default function InteractHint({ visible, text = "E — Interact", x = 0, y = 0 }) {
-  if (!visible) return null;
-  // Posisi bebas (absolute) — kamu bisa sesuaikan sesuai kamera/viewport
+// src/components/InteractHint.jsx
+import React from "react";
+import "../styles/cleaning.css";
+
+/**
+ * Hint interaksi “Tekan E …”
+ * Posisi absolut relatif ke container scene (yang harus position:relative).
+ * Props:
+ *  - x, y : titik anchor (px)
+ *  - text : string
+ *  - offsetX, offsetY : geser posisi hint (default: di atas anchor)
+ */
+export default function InteractHint({
+  x = 0,
+  y = 0,
+  text = "Tekan E",
+  offsetX = 0,
+  offsetY = -28,
+}) {
   return (
     <div
+      className="interact-hint"
       style={{
-        position: "absolute",
-        left: x,
-        top: y,
-        padding: "6px 10px",
-        background: "rgba(0,0,0,0.6)",
-        color: "#fff",
-        borderRadius: 6,
-        fontFamily: "monospace",
-        fontSize: 14,
-        pointerEvents: "none",
-        transform: "translate(-50%,-120%)",
-        whiteSpace: "nowrap",
-        zIndex: 40
+        left: Math.round(x + offsetX),
+        top: Math.round(y + offsetY),
       }}
     >
-      {text}
+      <kbd>E</kbd>
+      <span>{text}</span>
     </div>
   );
 }
