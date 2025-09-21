@@ -1,4 +1,3 @@
-// src/scenes/LivingRoomScene.jsx
 import { useEffect, useRef, useState, useMemo } from "react";
 import DebugCollisionOverlay from "../mechanics/DebugCollisionOverlay.jsx";
 import { moveWithCollisionAxis } from "../mechanics/collision.js";
@@ -223,12 +222,15 @@ export default function LivingRoomScene({
       }
 
       // ======= Door checks (dua zona) =======
-      const movedBox = { x: moved.x, y: moved.y, width: moved.w, height: moved.h };
-      const yardRect = inflateRect(doorToYard, 6);
+      // PENTING: hb untuk overlaps harus {w,h}, buka {width,height}
+      const movedBox = { x: moved.x, y: moved.y, w: moved.w, h: moved.h };
+      const yardRect = inflateRect(doorToYard, 6); // box pintu tetap {width,height}
       const hallRect = inflateRect(doorToHall, 6);
 
       setNearYard(yardRect ? doorOverlaps(movedBox, yardRect) : false);
-      setNearHall(hallRect ? doorOverlaps(movedBox, hallRect) && progress >= 70 : false);
+      // nearHall artinya "sedang dekat pintu hall" — syarat progress dipakai saat aksi/hint
+      const isNearHall = hallRect ? doorOverlaps(movedBox, hallRect) : false;
+      setNearHall(isNearHall);
 
       // Toggle anim
       const movingNow = len > 0;
@@ -271,16 +273,15 @@ export default function LivingRoomScene({
     const onKey = (e) => {
       if (e.key.toLowerCase() !== "e") return;
 
-      // Hitbox player saat ini
+      // Hitbox player saat ini — HARUS {w,h}
       const curr = posRef.current;
       const hbNow = {
         x: curr.x + HITBOX.offsetX,
         y: curr.y + HITBOX.offsetY,
-        width: HITBOX.w,
-        height: HITBOX.h,
+        w: HITBOX.w,
+        h: HITBOX.h,
       };
 
-      // Pakai rect yang sama dengan penentuan near (supaya konsisten)
       const yardRect = inflateRect(doorToYard, 6);
       const hallRect = inflateRect(doorToHall, 6);
 
@@ -288,9 +289,9 @@ export default function LivingRoomScene({
       const inHall = hallRect ? doorOverlaps(hbNow, hallRect) : false;
 
       if (inHall && progress >= 70) {
-        onExitToHallway?.(); // contoh: setScene({ name:"hallway", spawnTag:"from_livingroom" })
+        onExitToHallway?.();
       } else if (inYard) {
-        onExitToYard?.();    // contoh: setScene({ name:"yard", spawnTag:"from_livingroom" })
+        onExitToYard?.();
       }
     };
 
@@ -383,7 +384,7 @@ export default function LivingRoomScene({
         )}
         {doorToHall && (
           <DoorHint
-            show={nearHall || (progress >= 70 && nearHall)} // tetap require dekat; progress hanya mengunci
+            show={progress >= 70 && nearHall} // tetap require dekat; progress hanya mengunci
             x={doorToHall.x + doorToHall.width / 2}
             y={doorToHall.y - 6}
             text={progress >= 70 ? "Tekan E untuk ke Hallway" : "Bersihkan ≥ 70% untuk buka pintu"}

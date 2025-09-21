@@ -1,5 +1,3 @@
-// src/mechanics/doors.js
-
 export const DOOR_CONFIG = {
   inset: 28,        // makin besar: zona masuk agak ke dalam rumah → aman dari spawn
   width: null,      // null => pakai fraksi dari lebar rumah
@@ -30,12 +28,18 @@ export function makeDoorZone(obstacles, houseRectId, cfg = DOOR_CONFIG) {
   return { x, y, width, height };
 }
 
-/** AABB overlap sederhana antara hb {x,y,w,h} dan box {x,y,width,height} */
+/** AABB overlap antara hb {x,y,w,h} (atau {x,y,width,height}) dan box {x,y,width,height} */
 export function overlaps(hb, box) {
+  if (!hb || !box) return false;
+
+  // Toleran terhadap bentuk properti:
+  const hbW = hb.w ?? hb.width ?? 0;
+  const hbH = hb.h ?? hb.height ?? 0;
+
   return !(
-    hb.x + hb.w <= box.x ||
+    hb.x + hbW <= box.x ||
     hb.x >= box.x + box.width ||
-    hb.y + hb.h <= box.y ||
+    hb.y + hbH <= box.y ||
     hb.y >= box.y + box.height
   );
 }

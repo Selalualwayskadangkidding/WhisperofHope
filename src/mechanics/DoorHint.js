@@ -14,6 +14,7 @@ export default function DoorHint({ show, x, y, text = "Tekan E untuk interaksi d
     lineHeight: 1,
     pointerEvents: "none",
     whiteSpace: "nowrap",
+    zIndex: 10,
   };
   return <div style={style}>{text}</div>;
 }
