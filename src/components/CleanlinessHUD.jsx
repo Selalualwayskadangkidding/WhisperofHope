@@ -1,51 +1,34 @@
-// src/components/CleanlinessHUD.jsx
 import React from "react";
 import "../styles/cleaning.css";
 
-/**
- * Meter kebersihan + checklist ringkas.
- * Props:
- *  - progress: number 0..100
- *  - checklist: {
- *      dust:{done,total,label}, corner_dust:{...}, paper:{...}, snack:{...},
- *      stain:{...}, cobweb:{...}, magazine:{...}, remote:{...}, plant_dry:{...}
- *    }
- */
-export default function CleanlinessHUD({ progress = 0, checklist = {} }) {
-  const entries = [
-    "dust",
-    "corner_dust",
-    "paper",
-    "snack",
-    "stain",
-    "cobweb",
-    "magazine",
-    "remote",
-    "plant_dry",
-  ].filter((k) => checklist[k]);
+const BAR_SEGMENTS = 16;
+
+export default function CleanlinessHUD({ progress, checklist, collapsed, onToggle }) {
+  const filled = Math.round((progress / 100) * BAR_SEGMENTS);
 
   return (
-    <div className="clean-hud">
-      <div className="clean-meter">
-        <div className="clean-meter-fill" style={{ width: `${Math.min(100, Math.max(0, progress))}%` }} />
-        <div className="clean-meter-text">{progress}%</div>
-      </div>
+    <div className="hud-root">
+      <button className="hud-header" onClick={onToggle}>
+        <span>Kebersihan</span>
+        <div className="hud-bar">
+          {Array.from({ length: BAR_SEGMENTS }).map((_, i) => (
+            <div key={i} className={`hud-segment ${i < filled ? "filled" : ""}`} />
+          ))}
+        </div>
+        <span className="hud-percent">{progress}%</span>
+        <span className="hud-hint">[Tab]</span>
+      </button>
 
-      <div className="clean-list">
-        {entries.map((k) => {
-          const { done = 0, total = 0, label = k } = checklist[k] || {};
-          const ok = total > 0 && done >= total;
-          return (
-            <div key={k} className={`clean-item ${ok ? "ok" : ""}`}>
-              <span className="clean-item-check">{ok ? "✓" : "•"}</span>
-              <span className="clean-item-label">{label}</span>
-              <span className="clean-item-count">
-                {done}/{total}
-              </span>
+      {!collapsed && (
+        <div className="hud-list">
+          {Object.entries(checklist).map(([key, v]) => (
+            <div key={key} className="hud-row">
+              <span>{v.label}</span>
+              <span>{(v.done || 0)}/{(v.total || 0)}</span>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

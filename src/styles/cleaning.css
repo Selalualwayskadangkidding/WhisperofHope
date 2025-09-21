@@ -1,70 +1,51 @@
-/* ====== THEME: warna senada tombol ====== */
-:root {
-  --btn-fill:        #e8b55a;   /* tan */
-  --btn-fill-hi:     #f6d58a;   /* highlight */
-  --btn-stroke:      #6b4122;   /* outline cokelat */
-  --btn-stroke-dark: #3a2410;   /* shadow/garis gelap */
-  --panel-bg:        rgba(34,22,12,0.88); /* cokelat gelap transparan */
-  --panel-line:      rgba(255,225,180,0.25);
-  --scroll-thumb:    #c88932;   /* cokelat-oranye (thumb) */
-  --scroll-thumb-hi: #dfa24c;
-  --text-main:       #fff8e5;   /* putih krem */
+.hud-root {
+  position: absolute;
+  top: 12px; left: 12px;
+  z-index: 50;
+  font-family: monospace;
 }
 
-/* Panel HUD (header + body) agar nyatu dengan tombol */
-.cleanliness-panel {
-  background: var(--panel-bg);
-  border: 2px solid var(--btn-stroke-dark);
-  box-shadow:
-    inset 0 0 0 2px var(--btn-stroke),
-    0 2px 0 #0008;
+.hud-header {
+  display: flex; align-items: center; gap: 8px;
+  background: #e5b561;            /* gold seperti tombol */
+  color: #34210a;
+  border: 2px solid #4a2c0a;
   border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
+.hud-header:active { transform: translateY(1px); }
 
-/* Header badge kecil (opsional kalau kamu mau wrap header di div sendiri) */
-.cleanliness-header {
-  background: linear-gradient(var(--btn-fill-hi), var(--btn-fill));
-  border: 2px solid var(--btn-stroke-dark);
-  box-shadow: inset 0 0 0 2px var(--btn-stroke);
-  border-radius: 8px;
-}
-
-/* ===== Scrollbar Custom untuk checklist (pixel vibes) ===== */
-.cleanliness-checklist {
-  max-height: 240px;
-  overflow-y: auto;
-  padding-right: 10px; /* ruang untuk scrollbar */
-  scrollbar-width: thin;                      /* Firefox */
-  scrollbar-color: var(--scroll-thumb) transparent;
-}
-
-/* Chrome, Edge, Safari */
-.cleanliness-checklist::-webkit-scrollbar {
-  width: 12px;
-}
-
-.cleanliness-checklist::-webkit-scrollbar-track {
-  background: linear-gradient(var(--btn-fill-hi), var(--btn-fill));
-  border: 2px solid var(--btn-stroke-dark);
-  box-shadow: inset 0 0 0 2px var(--btn-stroke);
+.hud-bar {
+  display: flex; gap: 1px;
+  background: #2b1a09;
+  padding: 2px 3px;
+  border: 1px solid #000;
   border-radius: 4px;
 }
+.hud-segment { width: 8px; height: 12px; background: #4a4a4a; image-rendering: pixelated; }
+.hud-segment.filled { background: #3ec94f; }
 
-.cleanliness-checklist::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
-  box-shadow: inset 0 0 0 2px var(--btn-stroke-dark), inset 0 0 0 4px var(--btn-stroke);
-  border-radius: 2px;            /* kotak tegas */
-}
+.hud-percent { width: 34px; text-align: right; }
+.hud-hint { opacity: .8; font-size: 12px; }
 
-.cleanliness-checklist::-webkit-scrollbar-thumb:hover {
-  background: var(--scroll-thumb-hi);
+.hud-list {
+  margin-top: 6px;
+  width: 280px;
+  max-height: 260px;
+  overflow: auto;
+  background: rgba(20, 12, 6, .85);
+  color: #f5e2c0;
+  border: 1px solid #4a2c0a;
+  border-radius: 8px;
+  padding: 8px;
+  backdrop-filter: blur(1px);
 }
+.hud-row { display: flex; justify-content: space-between; padding: 6px 4px; border-bottom: 1px dashed rgba(255,255,255,.08); }
+.hud-row:last-child { border-bottom: 0; }
 
-/* Item list border dotted yang lebih halus */
-.cleanliness-item {
-  border: 1px dashed var(--panel-line);
-  color: var(--text-main);
-}
-.cleanliness-item--done {
-  background: rgba(70, 120, 40, 0.28);
-}
+/* layering dasar */
+.lr-stage { position: relative; }
+.lr-map { position: absolute; left:0; top:0; z-index: 0; }
+.lr-trash { z-index: 2; }
+.lr-player { position: absolute; z-index: 3; }
