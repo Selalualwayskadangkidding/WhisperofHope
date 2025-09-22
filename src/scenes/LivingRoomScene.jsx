@@ -1,3 +1,4 @@
+// src/scenes/LivingRoomScene.jsx
 import { useEffect, useRef, useState, useMemo } from "react";
 import DebugCollisionOverlay from "../mechanics/DebugCollisionOverlay.jsx";
 import { moveWithCollisionAxis } from "../mechanics/collision.js";
@@ -16,14 +17,16 @@ import {
   getNewlyUnlockedItems,
   computeProgress,
 } from "../data/livingroomTrash.js";
-import { useInteractKey, useKeyHold } from "../mechanics/interact.js";
+import { useInteractKey } from "../mechanics/interact.js";
 
 // ===== UI =====
 import InteractHint from "../components/InteractHint.jsx";
 import TrashSprite from "../components/TrashSprite.jsx";
 import CleanlinessHUD from "../components/CleanlinessHUD.jsx";
-import WipeBar from "../components/WipeBar.jsx";
 import "../styles/cleaning.css";
+
+// ===== Mini-game scrub (gerak mouse) =====
+import useScrubStart from "../minigames/useScrubStart.jsx";
 
 // ===== Editor penempatan trash rects =====
 import {
@@ -81,18 +84,20 @@ export default function LivingRoomScene({
   const [nearYard, setNearYard] = useState(false);
   const [nearHall, setNearHall] = useState(false);
 
-  // ======= CLEANING STATE =======
+  // ======= CLEANING STATE (satu-satunya!) =======
   const [trashList, setTrashList] = useState(() => loadLivingroomTrash());
   const [focusId, setFocusId] = useState(null);
   const [focusPoint, setFocusPoint] = useState(null); // posisi hint
   const [progress, setProgress] = useState(0);
   const [checklist, setChecklist] = useState({});
-  const [wipeActive, setWipeActive] = useState(false);
   const interact = useInteractKey("KeyE", 180);
-  const holdE = useKeyHold("KeyE");
-
-  // ======= HUD toggle (Tab) =======
   const [hudCollapsed, setHudCollapsed] = useState(false);
+
+  // lock input saat scrub overlay aktif
+  const [isScrubbing, setIsScrubbing] = useState(false);
+
+  // ======= Scrub mini-game hook & portal =======
+  const { startScrub, ScrubPortal } = useScrubStart();
 
   const spriteFrames = {
     down: ["backleft.png"],
@@ -119,7 +124,6 @@ export default function LivingRoomScene({
       if (e.key === "Tab") { e.preventDefault(); setHudCollapsed(c => !c); return; }
 
       if (e.key.toLowerCase() === "r" && debug) {
-        // reset obstacles & trash rects (mode editor)
         localStorage.removeItem(LR_STORAGE_KEY);
         localStorage.removeItem(LR_TRASH_RECTS_KEY);
         setObstacles(getDefaultLivingroomObstacles());
@@ -180,13 +184,15 @@ export default function LivingRoomScene({
       const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
 
-      // Arah input
+      // Arah input (dibekukan kalau scrubbing)
       let ax = 0, ay = 0;
       const k = keys.current;
-      if (k["w"] || k["arrowup"])    { ay -= 1; setDirection("up"); }
-      if (k["s"] || k["arrowdown"])  { ay += 1; setDirection("down"); }
-      if (k["a"] || k["arrowleft"])  { ax -= 1; setDirection("left"); }
-      if (k["d"] || k["arrowright"]) { ax += 1; setDirection("right"); }
+      if (!isScrubbing) {
+        if (k["w"] || k["arrowup"])    { ay -= 1; setDirection("up"); }
+        if (k["s"] || k["arrowdown"])  { ay += 1; setDirection("down"); }
+        if (k["a"] || k["arrowleft"])  { ax -= 1; setDirection("left"); }
+        if (k["d"] || k["arrowright"]) { ax += 1; setDirection("right"); }
+      }
 
       // Normalisasi + kecepatan
       const len = Math.hypot(ax, ay);
@@ -222,15 +228,12 @@ export default function LivingRoomScene({
       }
 
       // ======= Door checks (dua zona) =======
-      // PENTING: hb untuk overlaps harus {w,h}, buka {width,height}
       const movedBox = { x: moved.x, y: moved.y, w: moved.w, h: moved.h };
-      const yardRect = inflateRect(doorToYard, 6); // box pintu tetap {width,height}
+      const yardRect = inflateRect(doorToYard, 6);
       const hallRect = inflateRect(doorToHall, 6);
 
       setNearYard(yardRect ? doorOverlaps(movedBox, yardRect) : false);
-      // nearHall artinya "sedang dekat pintu hall" — syarat progress dipakai saat aksi/hint
-      const isNearHall = hallRect ? doorOverlaps(movedBox, hallRect) : false;
-      setNearHall(isNearHall);
+      setNearHall(hallRect ? doorOverlaps(movedBox, hallRect) : false);
 
       // Toggle anim
       const movingNow = len > 0;
@@ -240,7 +243,7 @@ export default function LivingRoomScene({
       }
 
       // ======= CLEANING: fokus item terdekat (pakai jarak, bukan overlap) =======
-      const pCx = moved.x + moved.w / 2; // pusat kaki player
+      const pCx = moved.x + moved.w / 2;
       const pCy = moved.y + moved.h / 2;
 
       let nearest = null;
@@ -266,14 +269,13 @@ export default function LivingRoomScene({
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [obstacles, doorToYard, doorToHall, progress, trashList.length]);
+  }, [obstacles, doorToYard, doorToHall, progress, trashList.length, isScrubbing]);
 
   // ======= Tekan 'E' saat dekat salah satu pintu =======
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key.toLowerCase() !== "e") return;
+      if (e.key.toLowerCase() !== "e" || isScrubbing) return;
 
-      // Hitbox player saat ini — HARUS {w,h}
       const curr = posRef.current;
       const hbNow = {
         x: curr.x + HITBOX.offsetX,
@@ -297,11 +299,11 @@ export default function LivingRoomScene({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [doorToYard, doorToHall, progress, onExitToHallway, onExitToYard]);
+  }, [doorToYard, doorToHall, progress, onExitToHallway, onExitToYard, isScrubbing]);
 
-  // ======= CLEANING: tekan E (pakai radius juga, anti-stale) =======
+  // ======= CLEANING: tekan E (radius check) =======
   useEffect(() => {
-    if (!interact.pressed || wipeActive) return;
+    if (!interact.pressed || isScrubbing) return;
 
     const curr = posRef.current;
     const pCx = curr.x + HITBOX.offsetX + HITBOX.w / 2;
@@ -319,10 +321,26 @@ export default function LivingRoomScene({
     }
     if (!best) return;
 
-    if (best.type === "stain") { setWipeActive(true); return; }
-    performClean(best);
+    if (best.type === "stain") {
+      cleanWithScrub(best);
+    } else {
+      performClean(best);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interact.pressed]);
+  }, [interact.pressed, isScrubbing]);
+
+  // ======= AKSI BERSIH (mini-game + update progress) =======
+  async function cleanWithScrub(item) {
+    setIsScrubbing(true); // freeze gerak + input lain
+    const label =
+      item.type === "cobweb"
+        ? "Gerakkan mouse untuk membersihkan sarang laba-laba"
+        : "Gerakkan mouse untuk mengelap";
+    const required = item.type === "cobweb" ? 2600 : 2200;
+    const ok = await startScrub({ label, required });
+    setIsScrubbing(false);
+    if (ok) performClean(item);
+  }
 
   function performClean(item) {
     markTrashClean(item.id);
@@ -335,14 +353,6 @@ export default function LivingRoomScene({
     setProgress(percent);
     setChecklist(cl);
   }
-
-  // ======= WipeBar callbacks =======
-  function handleWipeDone() {
-    setWipeActive(false);
-    const target = trashList.find((t) => t.id === focusId);
-    if (target && target.type === "stain") performClean(target);
-  }
-  function handleWipeCancel() { setWipeActive(false); }
 
   return (
     <div className="lr-root">
@@ -384,7 +394,7 @@ export default function LivingRoomScene({
         )}
         {doorToHall && (
           <DoorHint
-            show={progress >= 70 && nearHall} // tetap require dekat; progress hanya mengunci
+            show={progress >= 70 && nearHall}
             x={doorToHall.x + doorToHall.width / 2}
             y={doorToHall.y - 6}
             text={progress >= 70 ? "Tekan E untuk ke Hallway" : "Bersihkan ≥ 70% untuk buka pintu"}
@@ -412,7 +422,9 @@ export default function LivingRoomScene({
           const target = trashList.find((t) => t.id === focusId);
           if (!target || !focusPoint) return null;
           const label =
-            target.type === "stain" ? "Tahan E untuk mengelap" : `Tekan E — ${target.label}`;
+            target.type === "stain"
+              ? "Tekan E untuk MULAI mengelap"
+              : `Tekan E — ${target.label}`;
           return <InteractHint visible x={focusPoint.x} y={focusPoint.y - 10} text={label} />;
         })()}
 
@@ -424,17 +436,7 @@ export default function LivingRoomScene({
           onToggle={() => setHudCollapsed((v) => !v)}
         />
 
-        {/* WipeBar untuk noda */}
-        <WipeBar
-          active={wipeActive}
-          holding={holdE}
-          requiredMs={1000}
-          onDone={handleWipeDone}
-          onCancel={handleWipeCancel}
-        />
-
         {/* ===== OVERLAYS (tahan SHIFT) ===== */}
-        {/* WORLD (obstacles) */}
         <DebugCollisionOverlay
           active={debug && editMode === "world"}
           rects={obstacles}
@@ -443,8 +445,6 @@ export default function LivingRoomScene({
           storageKey={LR_STORAGE_KEY}
           scale={scale}
         />
-
-        {/* TRASH (penempatan kotoran) */}
         <DebugCollisionOverlay
           active={debug && editMode === "trash"}
           rects={trashRects}
@@ -454,6 +454,9 @@ export default function LivingRoomScene({
           scale={scale}
         />
       </div>
+
+      {/* Portal overlay untuk mini-game scrub */}
+      {ScrubPortal}
     </div>
   );
 }
