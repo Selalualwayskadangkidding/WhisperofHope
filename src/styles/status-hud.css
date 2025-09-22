@@ -1,0 +1,76 @@
+.sh-wrap {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  width: min(380px, 45vw);
+  z-index: 9999;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.sh-money {
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 10px;
+  letter-spacing: 0.4px;
+  opacity: 0.95;
+}
+
+.sh-block { margin: 10px 0 14px; }
+
+.sh-title {
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.95;
+}
+
+.sh-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* bar */
+.sh-bar-pixel {
+  --h: 18px;
+  --gap: 2px;
+  position: relative;
+  height: var(--h);
+  border: 2px solid var(--bar-border, #111);
+  border-radius: 4px;
+  background: var(--bar-bg, #333);
+  overflow: hidden;
+  box-shadow:
+    0 2px 0 rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.sh-pixel-track {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.08) 0,
+      rgba(255,255,255,0.08) calc((100% / var(--segments)) - var(--gap)),
+      transparent calc((100% / var(--segments)) - var(--gap)),
+      transparent calc(100% / var(--segments))
+    );
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.sh-pixel-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--bar-fill, #cfcfcf);
+  box-shadow:
+    inset 0 -2px 0 rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: width 0.25s steps(10, end);
+}
