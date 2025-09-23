@@ -13,6 +13,9 @@ import RoomOrtuScene from "./scenes/RoomOrtuScene";
 import KitchenScene from "./scenes/KitchenScene";
 import BathroomScene from "./scenes/BathroomScene";
 
+// ⬇️ BARU: Pasar
+import MarketScene from "./scenes/MarketScene";
+
 // ====== Kunci & Inventori (sesuai project lu) ======
 import locks from "./mechanics/locks";
 // 👉 pakai provider inventori yang tadi kita bikin
@@ -26,11 +29,10 @@ export default function App() {
   // mulai dari menu (ikut kode lama lu)
   const [scene, setScene] = useState("menu");
 
-  // init locks 1x (pindahin dari render ke effect biar gak ke-init tiap render)
+  // init locks 1x
   useEffect(() => {
     locks.initLocks({
       doors: {
-        // contoh: sesuaikan sama sistem kamu
         frontdoor: { locked: true, requiredKeyId: "key_front" },
         yard_to_lr: { locked: true, requiredKeyId: "key_house" },
       },
@@ -44,32 +46,30 @@ export default function App() {
   }
 
   // ====== StatusHUD config ======
-  // HUD disembunyikan di menu & intro (kalau mau tampil, set ke false)
   const hudHidden = scene === "menu" || scene === "intro";
 
-  // Pemetaan nama scene (pakai string-string yang ADA di kode lu)
-  // → ke "tema" yang dipakai StatusHUD
   const sceneToTheme = {
     yard: "yard",
     hallway: "hallway",
-    LivingRoomScene: "livingroom", // nama state lu PascalCase, HUD cukup tahu temanya "livingroom"
+    LivingRoomScene: "livingroom",
     RoomKakakScene: "roomkakak",
     RoomOrtuScene: "roomortu",
     KitchenScene: "kitchen",
     BathroomScene: "bathroom",
+    MarketScene: "market",        // ⬅️ tambahkan tema market
   };
   const hudTheme = sceneToTheme[scene] ?? "default";
 
   return (
     <PlayerProvider>
       <InventoryProvider>
-        {/* HUD global: selalu nempel, warna ikut scene */}
+        {/* HUD global */}
         <StatusHUD scene={hudTheme} hidden={hudHidden} />
 
         {scene === "menu" && (
           <MenuScreen
             onStartNew={() => setScene("intro")}
-            onGoHallway={() => setScene("hallway")} // tombol cepat ke hallway
+            onGoHallway={() => setScene("hallway")}
             onExit={() => console.log("Keluar game")}
           />
         )}
@@ -79,8 +79,8 @@ export default function App() {
         {scene === "yard" && (
           <YardScene
             onBackMenu={() => setScene("menu")}
-            // Tekan E di pintu rumah → pakai string lama lu biar nggak ngerusak alur
             onEnterHouse={() => setScene("LivingRoomScene")}
+            onEnterMarket={() => setScene("MarketScene")}
           />
         )}
 
@@ -117,6 +117,11 @@ export default function App() {
 
         {scene === "BathroomScene" && (
           <BathroomScene onBackHallway={() => goToHallwayFrom(10)} />
+        )}
+
+        {/* ======== Pasar ======== */}
+        {scene === "MarketScene" && (
+          <MarketScene onBack={() => setScene("yard")} />
         )}
       </InventoryProvider>
     </PlayerProvider>

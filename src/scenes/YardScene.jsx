@@ -12,19 +12,18 @@ import useDoorEnter from "../mechanics/useDoorEnter.js";
 import DoorHint from "../components/DoorHint.jsx";
 
 import InventoryPanel from "../components/InventoryPanel.jsx";
-import { itemLabel } from "../state/itemsDb.js";
+import { ITEMS, itemLabel } from "../state/itemsDb.js";
+import MoneyText from "../components/MoneyText.jsx";
 
 import {
   loadInventory,
   saveInventory,
   hasItem,
   addItem,
-  ITEMS,
   listKeysForHouse,
   hasMatchingKey,
   // removeItem, // aktifkan jika kunci sekali pakai
 } from "../state/inventory.js";
-
 import { isLocked, setLocked, ensureLock } from "../state/locks.js";
 
 /** ==== KONFIG ==== */
@@ -44,7 +43,10 @@ const HOUSE_TAG = "house1";
 const FRONT_LOCK_ID = "frontdoor";
 const REQ_KEY_ID = `key:${HOUSE_TAG}:${FRONT_LOCK_ID}`;
 
-export default function YardScene({ onEnterHouse }) {
+/** Zona pasar berada pada obstacle id ini */
+const MARKET_ZONE_ID = 11;
+
+export default function YardScene({ onEnterHouse, onEnterMarket }) {
   const worldRef = useRef(null);
   const [debug, setDebug] = useState(false);
 
@@ -53,9 +55,13 @@ export default function YardScene({ onEnterHouse }) {
     loadObstaclesFromStorage(STORAGE_KEY) ?? getDefaultObstacles()
   );
 
-  /** Door zone + proximity */
+  /** Door zone + proximity (ke rumah) */
   const [doorZone, setDoorZone] = useState(null); // {x,y,width,height}
   const [nearDoor, setNearDoor] = useState(false);
+
+  /** Market zone + proximity */
+  const [marketZone, setMarketZone] = useState(null); // {x,y,width,height}
+  const [nearMarket, setNearMarket] = useState(false);
 
   /** Player */
   const spriteRef = useRef(null);
@@ -114,7 +120,7 @@ export default function YardScene({ onEnterHouse }) {
     setLockedState(isLocked(HOUSE_TAG, FRONT_LOCK_ID));
   }, []);
 
-  /** Hitung zona pintu dari obstacle rumah */
+  /** Hitung zona pintu rumah dari obstacle ID khusus */
   useEffect(() => {
     const house = obstacles.find((o) => o.id === HOUSE_RECT_ID_FOR_DOOR);
     if (!house) {
@@ -128,6 +134,22 @@ export default function YardScene({ onEnterHouse }) {
     setDoorZone({ x, y, width, height });
   }, [obstacles]);
 
+  /** Hitung zona pasar dari obstacle id=MARKET_ZONE_ID */
+  useEffect(() => {
+    const m = obstacles.find((o) => o.id === MARKET_ZONE_ID);
+    if (!m) {
+      setMarketZone(null);
+      return;
+    }
+    // obstacle pakai w/h → convert ke width/height buat util overlaps()
+    setMarketZone({
+      x: m.x,
+      y: m.y,
+      width: m.w ?? m.width,
+      height: m.h ?? m.height,
+    });
+  }, [obstacles]);
+
   /** Keyboard: WASD + I + E (gunakan kunci HANYA saat dekat pintu & terkunci) */
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -135,7 +157,6 @@ export default function YardScene({ onEnterHouse }) {
       if (e.key === "i" || e.key === "I") {
         e.preventDefault();
         setShowInventory((v) => {
-          // kalau lagi ada handler paksa klik kunci, hapus saat ditutup manual
           if (v && window.__yard_onInvClick) delete window.__yard_onInvClick;
           return !v;
         });
@@ -175,13 +196,10 @@ export default function YardScene({ onEnterHouse }) {
             setLocked(HOUSE_TAG, FRONT_LOCK_ID, false);
             setLockedState(false);
             console.log(`Membuka pintu dengan ${itemLabel(clickedId)}.`);
-            // Optional: sekali pakai
-            // setInventory(removeItem(inventory, clickedId));
             setShowInventory(false);
             delete window.__yard_onInvClick;
           } else {
             console.log("Kunci tidak cocok. Pilih kunci lain.");
-            // biarkan inventory tetap terbuka
           }
         };
         return;
@@ -216,7 +234,13 @@ export default function YardScene({ onEnterHouse }) {
     onEnter: onEnterHouse,
   });
 
-  /** Loop game (gerak + collision + deteksi nearDoor) */
+  /** E → ke pasar kapanpun dekat zona pasar */
+  useDoorEnter({
+    enabled: !!nearMarket,
+    onEnter: onEnterMarket,
+  });
+
+  /** Loop game (gerak + collision + deteksi nearDoor & nearMarket) */
   useEffect(() => {
     let raf;
     let last = performance.now();
@@ -226,18 +250,40 @@ export default function YardScene({ onEnterHouse }) {
       const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
 
-      let ax = 0, ay = 0;
-      if (keysPressed.current["w"]) { ay -= 1; setDirection("up"); }
-      if (keysPressed.current["s"]) { ay += 1; setDirection("down"); }
-      if (keysPressed.current["a"]) { ax -= 1; setDirection("left"); }
-      if (keysPressed.current["d"]) { ax += 1; setDirection("right"); }
+      let ax = 0,
+        ay = 0;
+      if (keysPressed.current["w"]) {
+        ay -= 1;
+        setDirection("up");
+      }
+      if (keysPressed.current["s"]) {
+        ay += 1;
+        setDirection("down");
+      }
+      if (keysPressed.current["a"]) {
+        ax -= 1;
+        setDirection("left");
+      }
+      if (keysPressed.current["d"]) {
+        ax += 1;
+        setDirection("right");
+      }
 
       const len = Math.hypot(ax, ay);
-      let dx = 0, dy = 0;
-      if (len > 0) { dx = (ax / len) * SPEED * dt; dy = (ay / len) * SPEED * dt; }
+      let dx = 0,
+        dy = 0;
+      if (len > 0) {
+        dx = (ax / len) * SPEED * dt;
+        dy = (ay / len) * SPEED * dt;
+      }
 
       const curr = posRef.current;
-      const hb = { x: curr.x + HITBOX.offsetX, y: curr.y + HITBOX.offsetY, w: HITBOX.w, h: HITBOX.h };
+      const hb = {
+        x: curr.x + HITBOX.offsetX,
+        y: curr.y + HITBOX.offsetY,
+        w: HITBOX.w,
+        h: HITBOX.h,
+      };
 
       let moved = hb;
       if (COLLISION_ENABLED && (dx || dy)) {
@@ -260,7 +306,7 @@ export default function YardScene({ onEnterHouse }) {
         setToggleAnimFlag((f) => !f);
       }
 
-      // Deteksi dekat pintu
+      // Deteksi dekat pintu rumah
       if (doorZone) {
         const movedBox = { x: moved.x, y: moved.y, width: moved.w, height: moved.h };
         setNearDoor(!!overlaps(movedBox, doorZone));
@@ -268,12 +314,20 @@ export default function YardScene({ onEnterHouse }) {
         setNearDoor(false);
       }
 
+      // Deteksi dekat zona pasar
+      if (marketZone) {
+        const movedBox = { x: moved.x, y: moved.y, width: moved.w, height: moved.h };
+        setNearMarket(!!overlaps(movedBox, marketZone));
+      } else {
+        setNearMarket(false);
+      }
+
       raf = requestAnimationFrame(loop);
     };
 
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [obstacles, doorZone]);
+  }, [obstacles, doorZone, marketZone]);
 
   /** Anim kaki */
   useEffect(() => {
@@ -286,9 +340,10 @@ export default function YardScene({ onEnterHouse }) {
     return () => clearInterval(id);
   }, [toggleAnimFlag]);
 
-  /** Spawn awal */
+  /** Spawn awal: pilih spawn yang BUKAN zona pasar (id 11) */
   useEffect(() => {
-    const spawn = obstacles.find((o) => o.type === "spawn");
+    const spawns = obstacles.filter((o) => o.type === "spawn" && o.id !== MARKET_ZONE_ID);
+    const spawn = spawns[0]; // ambil yang pertama (atau pilih by id kalau mau)
     if (!spawn) return;
     const x = spawn.x - HITBOX.offsetX + (spawn.w - HITBOX.w) / 2;
     const y = spawn.y - HITBOX.offsetY + (spawn.h - HITBOX.h) / 2;
@@ -312,6 +367,20 @@ export default function YardScene({ onEnterHouse }) {
         overflow: "hidden",
       }}
     >
+      {/* === HUD Uang (sinkron dengan toko) === */}
+      <MoneyText
+        prefix=""
+        style={{
+          position: "absolute",
+          left: 12,
+          top: 12,
+          zIndex: 12,
+          fontWeight: 800,
+          color: "#fff",
+          textShadow: "0 2px 0 #0008",
+        }}
+      />
+
       {/* Collision visual */}
       {SHOW_COLLISION_VISUAL &&
         obstacles.map((o) => (
@@ -347,14 +416,39 @@ export default function YardScene({ onEnterHouse }) {
           }}
         />
       )}
+      {SHOW_DOOR_DEBUG_BOX && marketZone && (
+        <div
+          style={{
+            position: "absolute",
+            left: marketZone.x,
+            top: marketZone.y,
+            width: marketZone.width,
+            height: marketZone.height,
+            border: "2px dashed #ff7f00",
+            background: "rgba(255,127,0,0.12)",
+            pointerEvents: "none",
+            zIndex: 7,
+          }}
+        />
+      )}
 
-      {/* Hint pintu */}
+      {/* Hint pintu rumah */}
       {doorZone && (
         <DoorHint
           show={nearDoor}
           x={doorZone.x + doorZone.width / 2}
           y={doorZone.y - 6}
           text={locked ? "Tekan E untuk gunakan kunci" : "Tekan E untuk masuk"}
+        />
+      )}
+
+      {/* Hint pasar */}
+      {marketZone && (
+        <DoorHint
+          show={nearMarket}
+          x={marketZone.x + marketZone.width / 2}
+          y={marketZone.y - 6}
+          text="Tekan E untuk ke Pasar"
         />
       )}
 
@@ -385,12 +479,12 @@ export default function YardScene({ onEnterHouse }) {
             setShowInventory(false);
             if (window.__yard_onInvClick) delete window.__yard_onInvClick;
           }}
-          disableBackdropClose={true}      // paksa pemain tetap di panel saat memilih kunci
-          hideCloseButton={false}          // set true kalau mau lebih strict
+          disableBackdropClose={true}
+          hideCloseButton={false}
           onItemClick={(id) => {
             if (window.__yard_onInvClick) window.__yard_onInvClick(id);
           }}
-          initialSelectedId={REQ_KEY_ID}   // fokus ke kunci pintu depan
+          initialSelectedId={REQ_KEY_ID}
         />
       )}
 
@@ -418,7 +512,8 @@ export default function YardScene({ onEnterHouse }) {
             zIndex: 9999,
           }}
         >
-          nearDoor: {String(nearDoor)} | locked: {String(locked)}
+          nearDoor: {String(nearDoor)} | locked: {String(locked)} | nearMarket:{" "}
+          {String(nearMarket)}
         </div>
       )}
     </div>
