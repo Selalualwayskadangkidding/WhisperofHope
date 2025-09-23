@@ -1,64 +1,69 @@
 // src/state/itemsDb.js
-const BASE = (import.meta?.env?.BASE_URL ?? "/").replace(/\/+$/, "") + "/";
+const BASE = import.meta.env.BASE_URL || "/";
 
-/** Katalog ID item baku (hindari magic string di tempat lain) */
-export const ITEM_IDS = {
-  HOUSE_KEYRING: "house_keyring",
-  HOUSE_KEY: "house_key", // legacy single key (back-compat)
-};
-
-/** Util: cek & bikin/pecah ID kunci multi pintu */
-export function isKeyId(id) {
-  return typeof id === "string" && id.startsWith("key:");
-}
-/**
- * keyId format: key:<houseTag>:<lockId>
- * contoh: key:house1:frontdoor
- */
-export function makeKeyId(houseTag, lockId) {
-  return `key:${houseTag}:${lockId}`;
-}
-export function parseKeyId(id) {
-  if (!isKeyId(id)) return null;
-  const [, houseTag, lockId] = id.split(":");
-  return { houseTag, lockId };
-}
-
-/** Label cantik buat UI */
+/** Label cantik buat ditampilkan di UI */
 export function itemLabel(id) {
   if (!id) return "—";
 
-  if (isKeyId(id)) {
-    const parsed = parseKeyId(id);
-    if (!parsed) return "Kunci";
-    const { houseTag, lockId } = parsed;
-    return `Kunci (${houseTag} / ${lockId})`;
+  // legacy keys
+  if (id?.startsWith("key:")) {
+    const [, house, lock] = id.split(":");
+    return `Kunci (${house} / ${lock})`;
+  }
+  if (id === "house_keyring") return "Gantungan Kunci";
+  if (id === "house_key") return "Kunci Rumah";
+
+  // merchant: tools
+  if (id.startsWith("tool:")) {
+    switch (id) {
+      case "tool:sapu": return "Sapu";
+      case "tool:kemoceng": return "Kemoceng";
+      case "tool:kanebo": return "Kanebo";
+      case "tool:pel": return "Pel";
+      case "tool:sikat": return "Sikat Lantai";
+      case "tool:steam_mop": return "Steam Mop";
+      case "tool:vacuum": return "Vacuum Cleaner";
+      default: return id.slice(5);
+    }
   }
 
-  switch (id) {
-    case ITEM_IDS.HOUSE_KEYRING:
-      return "Gantungan Kunci";
-    case ITEM_IDS.HOUSE_KEY: // legacy
-      return "Kunci Rumah";
-    default:
-      // fallback: tampilkan id mentah biar kelihatan kalau ada item baru
-      return id;
+  // merchant: foods
+  if (id.startsWith("food:")) {
+    switch (id) {
+      case "food:tempe": return "Tempe";
+      case "food:tahu": return "Tahu";
+      case "food:lontong": return "Lontong";
+      case "food:sukro": return "Sukro";
+      default: return id.slice(5);
+    }
   }
+
+  // merchant: drinks
+  if (id.startsWith("drink:")) {
+    switch (id) {
+      case "drink:air": return "Air Putih";
+      case "drink:teh": return "Teh Manis";
+      case "drink:kopi": return "Kopi Tubruk";
+      case "drink:es_jeruk": return "Es Jeruk";
+      case "drink:beras_kencur": return "Beras Kencur";
+      case "drink:kunyit_asem": return "Kunyit Asem";
+      default: return id.slice(6);
+    }
+  }
+
+  return id;
 }
 
-/** Path icon item (arahin ke aset kamu) */
+/** Path icon item (sesuaikan aset kamu) */
 export function itemIcon(id) {
-  if (!id) return null;
+  // legacy keys
+  if (id === "house_key") return `${BASE}assets/ui/items/keys/house_key.png`;
+  if (id?.startsWith("key:")) return `${BASE}assets/ui/items/keys/house_key.png`;
 
-  // Legacy single key → ikon sama
-  if (id === ITEM_IDS.HOUSE_KEY) return `${BASE}assets/ui/items/keys/house_key.png`;
+  // merchant placeholders
+  if (id?.startsWith("tool:"))   return `${BASE}assets/ui/items/tools/default_tool.png`;
+  if (id?.startsWith("food:"))   return `${BASE}assets/ui/items/foods/default_food.png`;
+  if (id?.startsWith("drink:"))  return `${BASE}assets/ui/items/drinks/default_drink.png`;
 
-  // Semua kunci multi pintu sementara pakai ikon yang sama
-  if (isKeyId(id)) return `${BASE}assets/ui/items/keys/house_key.png`;
-
-  // Gantungan kunci (SVG)
-  if (id === ITEM_IDS.HOUSE_KEYRING) return `${BASE}assets/ui/items/keys/keyring.svg`;
-
-  // fallback: tidak ada ikon
-  return null;
+  return `${BASE}assets/ui/items/default.png`;
 }

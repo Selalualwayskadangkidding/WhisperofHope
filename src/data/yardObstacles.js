@@ -15,6 +15,7 @@ const manualObstacles = [
   { id: 8,  x: 1454, y: 159, width: 225, height: 1104, type: "solid" },
   { id: 9,  x: 519,  y: 947, width: 463, height: 319, type: "solid" },
   { id: 10, x: 947,  y: 536, width: 34,  height: 89,  type: "spawn" },
+  { id: 11, x: 1307, y: 536, width: 34,  height: 89,  type: "spawn" }, // to marketscene
 ];
 
 // Normalizer → ubah ke {id,x,y,w,h,type}

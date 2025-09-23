@@ -9,6 +9,7 @@ import {
   loadRoomOrtuObstaclesFromStorage,
 } from "../data/roomOrtuObstacles.js";
 import "../styles/hallway.css";
+import MoneyText from "../components/MoneyText.jsx";
 
 const HITBOX = { offsetX: 65, offsetY: 135, w: 20, h: 15 };
 const SPEED = 180;
